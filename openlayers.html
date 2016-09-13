@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>OpenLayers 3 表示サンプル</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.10.1/ol.css"/>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.10.1/ol.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/zepto/1.2.0/zepto.min.js"></script>
+
+    <style>
+        .map {
+            width: 100%;
+            max-width: 900px;
+            height: 600px;
+        }
+
+        .map, .control .FeatureInfo {
+            float: left;
+        }
+
+        li {
+            display: block;
+        }
+
+        table {
+            border: solid 1px gray;
+            border-collapse: collapse;
+        }
+
+        td {
+            border: solid 1px gray
+        }
+
+        td.td_title {
+            width: 100px;
+            background: lightyellow;
+        }
+
+    </style>
+</head>
+<body>
+<div>
+    <div id="map" class="map"></div>
+    <div>
+        Zoom-Level : <input id="zoomlv" type="text" value="17" disabled/>
+    </div>
+    <div id="control" class="control">
+        <ul/>
+    </div>
+    <div>位置情報
+        <div id="latlon" class="latlon"></div>
+    </div>
+    <div>地質情報
+        <div id="FeatureInfo" class="FeatureInfo"></div>
+    </div>
+    <div id="overlay" style="background-color:white; border: 1px solid black; padding: 5px 10px;">Makkah</div>
+</div>
+<script>
+
+    // CloudFrontを使ってアクセス先をひとつにまとめた
+    function mtsHost(path) {
+        // あなたのCloudFrontを指定してください！！
+        // 仮にOpenStreetMapを指定しています
+        return "http://tile.openstreetmap.org/" + path;
+    }
+
+    var pointData = [
+        [139.7132983, 35.6421450] // 恵比寿ガーデンプレイス
+    ];
+
+    var markerData = pointData.map(function (p) {
+        return new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.transform(p, "EPSG:4326", "EPSG:900913"))
+        });
+    });
+
+    var layers = [
+        {
+            title: "写真(1974年) [10-17]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#gazo1",
+            layer: new ol.layer.Tile({
+                visible: false,
+                source: new ol.source.XYZ({
+                    //url: "http://cyberjapandata.gsi.go.jp/xyz/gazo1/{z}/{x}/{y}.jpg",
+                    url: mtsHost("/xyz/gazo1/{z}/{x}/{y}.jpg")
+                })
+            })
+        },
+        {
+            title: "写真(1979年) [10-17]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#gazo2",
+            layer: new ol.layer.Tile({
+                visible: false,
+                source: new ol.source.XYZ({
+                    //url: "http://cyberjapandata.gsi.go.jp/xyz/gazo2/{z}/{x}/{y}.jpg",
+                    url: mtsHost("/xyz/gazo2/{z}/{x}/{y}.jpg")
+                })
+            })
+        },
+        {
+            title: "写真(1984年) [10-17]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#gazo3",
+            layer: new ol.layer.Tile({
+                visible: false,
+                source: new ol.source.XYZ({
+                    //url: "http://cyberjapandata.gsi.go.jp/xyz/gazo3/{z}/{x}/{y}.jpg",
+                    url: mtsHost("/xyz/gazo3/{z}/{x}/{y}.jpg")
+                })
+            })
+        },
+        {
+            title: "写真(1988年) [10-17]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#gazo4",
+            layer: new ol.layer.Tile({
+                visible: false,
+                source: new ol.source.XYZ({
+                    //url: "http://cyberjapandata.gsi.go.jp/xyz/gazo4/{z}/{x}/{y}.jpg",
+                    url: mtsHost("/xyz/gazo4/{z}/{x}/{y}.jpg")
+                })
+            })
+        },
+        {
+            title: "簡易空中写真(2004年) [15-18]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#airphoto",
+            layer: new ol.layer.Tile({
+                visible: false,
+                source: new ol.source.XYZ({
+                    //url: "http://cyberjapandata.gsi.go.jp/xyz/airphoto/{z}/{x}/{y}.png",
+                    url: mtsHost("/xyz/airphoto/{z}/{x}/{y}.png")
+                })
+            })
+        },
+        {
+            title: "白地図 [5-14]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#blank",
+            layer: new ol.layer.Tile({
+                visible: false,
+                source: new ol.source.XYZ({
+                    //url: "http://cyberjapandata.gsi.go.jp/xyz/blank/{z}/{x}/{y}.png",
+                    url: mtsHost("/xyz/blank/{z}/{x}/{y}.png")
+                })
+            })
+        },
+        {
+            title: "写真 (オルソ画像)",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#orz",
+            layer: new ol.layer.Tile({
+                visible: false,
+                source: new ol.source.XYZ({
+                    //url: "http://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg",
+                    url: mtsHost("/xyz/ort/{z}/{x}/{y}.jpg")
+                })
+            })
+        },
+        {
+            title: "色別標高図 [5-15]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#relief",
+            layer: new ol.layer.Tile({
+                visible: false,
+                opacity: 0.6,
+                source: new ol.source.XYZ({
+                    //url: "http://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png",
+                    url: mtsHost("/xyz/relief/{z}/{x}/{y}.png")
+                })
+            })
+        },
+        {
+            title: "地理院 標準地図",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#std",
+            layer: new ol.layer.Tile({
+                visible: false,
+                source: new ol.source.XYZ({
+                    //url: "http://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png",
+                    url: mtsHost("/xyz/std/{z}/{x}/{y}.png")
+                })
+            })
+        },
+        {
+            title: "OpenStreetMap",
+            memo: "https://openstreetmap.jp/",
+            layer: new ol.layer.Tile({
+                visible: true,
+                //source: new ol.source.OSM()
+                source: new ol.source.XYZ({
+                    url: mtsHost("/{z}/{x}/{y}.png")
+                })
+            })
+        },
+        {
+            title: "土地利用図 [11-14]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#lum200k",
+            layer: new ol.layer.Tile({
+                visible: false,
+                opacity: 0.6,
+                source: new ol.source.XYZ({
+                    //url: "http://cyberjapandata.gsi.go.jp/xyz/lum200k/{z}/{x}/{y}.png",
+                    url: mtsHost("/xyz/lum200k/{z}/{x}/{y}.png")
+                })
+            })
+        },
+        {
+            title: "道路中心線 [16]",
+            memo: "https://github.com/gsi-cyberjapan/vector-tile-experiment",
+            layer: new ol.layer.Vector({
+                visible: false,
+                source: new ol.source.TileVector({
+                    format: new ol.format.GeoJSON(),
+                    tileGrid: new ol.tilegrid.createXYZ(),
+                    //url: 'http://cyberjapandata.gsi.go.jp/xyz/experimental_rdcl/{z}/{x}/{y}.geojson'
+                    url: mtsHost("/xyz/experimental_rdcl/{z}/{x}/{y}.geojson")
+                }),
+                style: new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: 'green',
+                        width: 3,
+                        lineCap: "butt"
+                    })
+                })
+            })
+        },
+        {
+            title: "地質 [5-13]",
+            memo: "https://gbank.gsj.jp/seamless/wmts/wmts.html",
+            layer: new ol.layer.Tile({
+                visible: false,
+                opacity: 0.6,
+                source: new ol.source.XYZ({
+                    //url: "https://gbank.gsj.jp/seamless/tilemap/detailed/g/{z}/{y}/{x}.png",
+                    url: mtsHost("/tilemap/detailed/g/{z}/{y}/{x}.png")
+                })
+            })
+        },
+        {
+            title: "断層・褶曲 [9-13]",
+            memo: "https://gbank.gsj.jp/seamless/wmts/wmts.html",
+            layer: new ol.layer.Tile({
+                visible: false,
+                source: new ol.source.XYZ({
+                    //url: "https://gbank.gsj.jp/seamless/tilemap/detailed/f/{z}/{y}/{x}.png",
+                    url: mtsHost("/tilemap/detailed/f/{z}/{y}/{x}.png")
+                })
+            })
+        },
+        {
+            title: "土地条件 [10-16]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#lcm25k_2012",
+            layer: new ol.layer.Tile({
+                visible: false,
+                opacity: 0.8,
+                source: new ol.source.XYZ({
+                    //url: "http://cyberjapandata.gsi.go.jp/xyz/lcm25k_2012/{z}/{x}/{y}.png",
+                    url: mtsHost("/xyz/lcm25k_2012/{z}/{x}/{y}.png")
+                })
+            })
+        },
+        {
+            title: "マーカー",
+            memo: "http://kokufu.blogspot.jp/2015/06/openlayers-3-2.html",
+            layer: new ol.layer.Vector({
+                visible: true,
+                source: new ol.source.Vector({
+                    features: markerData
+                }),
+                style: new ol.style.Style({
+                    image: new ol.style.Icon({
+                        anchor: [0.5, 46],
+                        anchorXUnits: 'fraction',
+                        anchorYUnits: 'pixels',
+                        src: 'http://openlayers.org/en/v3.10.1/examples/data/icon.png'
+                    })
+                })
+            })
+        }
+    ];
+
+    var makkah = ol.proj.transform(pointData[0], 'EPSG:4326', 'EPSG:3857');
+
+    var overlay = new ol.Overlay({
+        element: document.getElementById('overlay'),
+        position: makkah,
+        positioning: 'bottom-center'
+    });
+
+    var map = new ol.Map({
+        target: "map",
+        layers: _.pluck(layers, 'layer'),
+        controls: ol.control.defaults({
+            attributionOptions: ({
+                collapsible: false
+            })
+        }),
+        view: new ol.View({
+            projection: "EPSG:3857",
+            center: makkah,
+            zoom: 11,
+            maxZoom: 18,
+            minZoom: 6
+        }),
+        // オーバーレイ
+        //overlays : [overlay],
+        // マウスズーム停止
+        interactions: ol.interaction.defaults({mouseWheelZoom: false})
+    });
+
+    // レイヤー
+    _.each(layers, function (layer) {
+        var item = $("<li />").append("<label />");
+        var check = layer.layer.getVisible() ? "checked" : "";
+        var input = $("<input  type='checkbox' " + check + " />").appendTo(item);
+        item.append(layer.title)
+        input.on("click", function () {
+            layer.layer.setVisible($(input).prop("checked"));
+        });
+        $('#control > ul').append(item);
+    });
+
+
+    // 地質詳細情報
+    function featureInfo(latlng) {
+
+        function appendTD(table, key, val) {
+            $("<tr>").appendTo(table)
+                    .append("<td class='td_title'>" + key + "</td>")
+                    .append("<td>" + val + "</td>");
+        }
+
+        var element = $("#latlon");
+        var table = $("<table>");
+        appendTD(table, "緯度", latlng.lat);
+        appendTD(table, "経度", latlng.lng);
+        element.empty();
+        element.append(table);
+
+        // 地質情報取得
+        // (クエリパラメータがあるのでCloudFront経由しないようにした)
+        var url = "https://gbank.gsj.jp/seamless/tilemap/detailed/g?zoom=13";
+        url += "&" + "latlng=" + latlng.lat + "," + latlng.lng;
+
+        $.ajax({
+            type: 'GET',
+            url: url,
+            dataType: 'json',
+            success: function (json) {
+                var element = $("#FeatureInfo");
+                var table = $("<table>");
+                appendTD(table, "タイトル", json.title);
+                appendTD(table, "グループ", json.group);
+                appendTD(table, "説明", json.description);
+                appendTD(table, "形成時代", json.formationAge);
+                appendTD(table, "岩質", json.lithology);
+                element.empty();
+                element.append(table);
+            }
+        });
+    }
+
+    map.on('click', function (event) {
+        console.log("map on click")
+        // event is ol.MapBrowserEvent
+        // see http://openlayers.org/en/v3.8.1/apidoc/ol.Map.html -> Fires -> click
+        // see http://openlayers.org/en/v3.8.1/apidoc/ol.MapBrowserEvent.html
+        var coord = event.coordinate;
+        var degrees = ol.proj.transform(coord, 'EPSG:3857', 'EPSG:4326');
+        featureInfo({lat: degrees[1], lng: degrees[0]});
+    });
+
+
+    // memo: http://openlayers.org/en/v3.8.1/apidoc/ol.View.html?stableonly=true
+    function getZoom() {
+        var zoom = map.getView().getZoom();
+        $("#zoomlv").val(zoom);
+    }
+    map.getView().on('change:resolution', getZoom);
+    getZoom();
+
+</script>
+</body>
+</html>

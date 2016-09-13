@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Leaflet 表示サンプル</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.css"/>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/zepto/1.2.0/zepto.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-tilelayer-geojson/1.0.4/TileLayer.GeoJSON.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-hash/0.2.1/leaflet-hash.min.js"></script>
+
+    <style>
+        .map {
+            width: 100%;
+            max-width: 900px;
+            height: 600px;
+        }
+
+        .map, .control {
+            float: left;
+        }
+
+        table {
+            border: solid 1px gray;
+            border-collapse: collapse;
+        }
+
+        td {
+            border: solid 1px gray
+        }
+
+        td.td_title {
+            width: 100px;
+            background: lightyellow;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div id="map" class="map"></div>
+    <div>位置情報
+        <div id="latlon" class="latlon"></div>
+    </div>
+    <div>地質情報
+        <div id="FeatureInfo" class="FeatureInfo"></div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    // CloudFrontを使ってアクセス先をひとつにまとめた
+    function mtsHost(path) {
+        // あなたのCloudFrontを指定してください！！
+        // 仮にOpenStreetMapを指定しています
+        return "http://tile.openstreetmap.org/" + path;
+    }
+
+    var pointData = [
+        [35.6421450, 139.7132983] // 恵比寿ガーデンプレイス
+    ];
+
+    var markerData = pointData.map(function (p) {
+        return L.marker(p).bindPopup("<h1>Hello! Leaflet!</h1>");
+    });
+
+    var baseLayers = [
+        {
+            title: "OpenStreetMap",
+            memo: "https://openstreetmap.jp/",
+            layer: L.tileLayer(
+                    //"http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    mtsHost("/{z}/{x}/{y}.png"),
+                    {
+                        attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a>'
+                    }
+            )
+        },
+        {
+            title: "地理院地図 標準",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#std",
+            layer: L.tileLayer(
+                    //"http://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png",
+                    mtsHost("/xyz/std/{z}/{x}/{y}.png"),
+                    {
+                        attribution: "<a href='http://www.gsi.go.jp/kikakuchousei/kikakuchousei40182.html' target='_blank'>国土地理院</a>"
+                    }
+            )
+        },
+        {
+            title: "地理院地図 オルソ",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#orz",
+            layer: L.tileLayer(
+                    //"http://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg",
+                    mtsHost("/xyz/ort/{z}/{x}/{y}.jpg"),
+                    {}
+            )
+        },
+        {
+            title: "写真(1974年) [10-17]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#gazo1",
+            layer: L.tileLayer(
+                    //"http://cyberjapandata.gsi.go.jp/xyz/gazo1/{z}/{x}/{y}.jpg",
+                    mtsHost("/xyz/gazo1/{z}/{x}/{y}.jpg"),
+                    {}
+            )
+        },
+        {
+            title: "写真(1979年) [10-17]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#gazo2",
+            layer: L.tileLayer(
+                    //"http://cyberjapandata.gsi.go.jp/xyz/gazo2/{z}/{x}/{y}.jpg",
+                    mtsHost("/xyz/gazo2/{z}/{x}/{y}.jpg"),
+                    {}
+            )
+        },
+        {
+            title: "写真(1984年) [10-17]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#gazo3",
+            layer: L.tileLayer(
+                    //"http://cyberjapandata.gsi.go.jp/xyz/gazo3/{z}/{x}/{y}.jpg",
+                    mtsHost("/xyz/gazo3/{z}/{x}/{y}.jpg"),
+                    {}
+            )
+        },
+        {
+            title: "写真(1988年) [10-17]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#gazo4",
+            layer: L.tileLayer(
+                    //"http://cyberjapandata.gsi.go.jp/xyz/gazo4/{z}/{x}/{y}.jpg",
+                    mtsHost("/xyz/gazo4/{z}/{x}/{y}.jpg"),
+                    {}
+            )
+        },
+        {
+            title: "簡易空中写真(2004年) [15-18]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#airphoto",
+            layer: L.tileLayer(
+                    //"http://cyberjapandata.gsi.go.jp/xyz/airphoto/{z}/{x}/{y}.png",
+                    mtsHost("/xyz/airphoto/{z}/{x}/{y}.png"),
+                    {}
+            )
+        },
+        {
+            title: "白地図 [5-14]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#blank",
+            layer: L.tileLayer(
+                    //"http://cyberjapandata.gsi.go.jp/xyz/blank/{z}/{x}/{y}.png",
+                    mtsHost("/xyz/blank/{z}/{x}/{y}.png"),
+                    {}
+            )
+        }
+    ];
+    var overLayers = [
+        {
+            title: "マーカー",
+            layer: L.layerGroup(markerData)
+        },
+        {
+            title: "色別標高図 [5-15]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#relief",
+            layer: L.tileLayer(
+                    //"http://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png",
+                    mtsHost("/xyz/relief/{z}/{x}/{y}.png"),
+                    {
+                        opacity: 0.6
+                    }
+            )
+        },
+        {
+            title: "土地利用図 [11-14]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#lum200k",
+            layer: L.tileLayer(
+                    //"http://cyberjapandata.gsi.go.jp/xyz/lum200k/{z}/{x}/{y}.png",
+                    mtsHost("/xyz/lum200k/{z}/{x}/{y}.png"),
+                    {
+                        opacity: 0.6
+                    }
+            )
+        },
+        {
+            title: "地質 [5-13]",
+            memo: "https://gbank.gsj.jp/seamless/wmts/wmts.html",
+            layer: L.tileLayer(
+                    //"https://gbank.gsj.jp/seamless/tilemap/detailed/g/{z}/{y}/{x}.png",
+                    mtsHost("/tilemap/detailed/g/{z}/{y}/{x}.png"),
+                    {
+                        opacity: 0.6
+                    }
+            )
+        },
+        {
+            title: "断層・褶曲 [9-13]",
+            memo: "https://gbank.gsj.jp/seamless/wmts/wmts.html",
+            layer: L.tileLayer(
+                    //"https://gbank.gsj.jp/seamless/tilemap/detailed/f/{z}/{y}/{x}.png",
+                    mtsHost("/tilemap/detailed/f/{z}/{y}/{x}.png"),
+                    {}
+            )
+        },
+        {
+            title: "土地条件 [10-16]",
+            memo: "http://maps.gsi.go.jp/development/ichiran.html#lcm25k_2012",
+            layer: L.tileLayer(
+                    //"http://cyberjapandata.gsi.go.jp/xyz/lcm25k_2012/{z}/{x}/{y}.png",
+                    mtsHost("/xyz/lcm25k_2012/{z}/{x}/{y}.png"),
+                    {
+                        opacity: 0.8
+                    }
+            )
+        }
+    ];
+
+    var map = L.map('map', {
+        center: pointData[0],
+        zoom: 14,
+        layers: [baseLayers[0].layer, overLayers[0].layer],
+        scrollWheelZoom: false
+    });
+
+    var hash = L.hash(map);
+
+    L.control.scale().addTo(map);
+
+    function toMaps(layers) {
+        return layers.reduce(function (memo, layer) {
+            memo[layer.title] = layer.layer;
+            return memo;
+        }, {});
+    }
+
+    var layerControl = L.control.layers(toMaps(baseLayers), toMaps(overLayers)).addTo(map);
+
+
+    // 国土地理院ベクトルタイル提供実験レポジトリ
+    // https://github.com/gsi-cyberjapan/vector-tile-experiment
+    function experimentalOverlay(name, key) {
+        $.ajax({
+            url: mtsHost("/xyz/experimental_" + key + "/style.js"),
+            success: function (response) {
+                var stylejs = eval("(" + response + ")");
+                var layer = new L.TileLayer.GeoJSON(
+                        //'http://cyberjapandata.gsi.go.jp/xyz/experimental_rdcl/{z}/{x}/{y}.geojson',
+                        mtsHost("/xyz/experimental_" + key + "/{z}/{x}/{y}.geojson"),
+                        stylejs.options, stylejs.geojsonOptions);
+                layerControl.addOverlay(layer, name);
+            }
+        });
+    }
+    [
+        ["道路中心線 [16]", "rdcl"],
+        ["鉄道中心線 [16]", "railcl"],
+        ["河川中心線 [16]", "rvrcl"]
+    ].forEach(function (info) {
+        experimentalOverlay(info[0], info[1]);
+    });
+
+
+    // 地質詳細情報
+    function featureInfo(latlng) {
+
+        function appendTD(table, key, val) {
+            $("<tr>").appendTo(table)
+                    .append("<td class='td_title'>" + key + "</td>")
+                    .append("<td>" + val + "</td>");
+        }
+
+        var element = $("#latlon");
+        var table = $("<table>");
+        appendTD(table, "緯度", latlng.lat);
+        appendTD(table, "経度", latlng.lng);
+        element.empty();
+        element.append(table);
+
+        // 地質情報取得
+        // (クエリパラメータがあるのでCloudFront経由しないようにした)
+        var url = "https://gbank.gsj.jp/seamless/tilemap/detailed/g?zoom=13";
+        url += "&" + "latlng=" + latlng.lat + "," + latlng.lng;
+
+        $.ajax({
+            url: url,
+            dataType: 'json',
+            success: function (json) {
+                var element = $("#FeatureInfo");
+                var table = $("<table>");
+                appendTD(table, "タイトル", json.title);
+                appendTD(table, "グループ", json.group);
+                appendTD(table, "説明", json.description);
+                appendTD(table, "形成時代", json.formationAge);
+                appendTD(table, "岩質", json.lithology);
+                element.empty();
+                element.append(table);
+            }
+        });
+    }
+
+    map.on('click', function (e) {
+        featureInfo(e.latlng);
+    });
+
+
+</script>
+</body>
+</html>
